@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true)
     const supabase = createClient()
 
-    const { error } = isSignUp
+    const { data, error } = isSignUp
       ? await supabase.auth.signUp({ email, password })
       : await supabase.auth.signInWithPassword({ email, password })
 
@@ -26,7 +26,7 @@ export default function LoginPage() {
 
     if (error) {
       if (error.message === 'Email not confirmed') {
-        setError('注册成功！请先去邮箱点确认链接，再回来登录。')
+        setError('注册成功！请先去邮箱点确认链接（可能在垃圾邮件里），再回来登录。')
         setIsSignUp(false)
       } else {
         setError(error.message)
@@ -35,7 +35,12 @@ export default function LoginPage() {
     }
 
     if (isSignUp) {
-      setError('注册成功！请去邮箱点确认链接，然后登录。')
+      if (data.session) {
+        router.replace('/')
+        router.refresh()
+        return
+      }
+      setError('注册成功！请去邮箱点确认链接（可能在垃圾邮件里），然后登录。')
       setIsSignUp(false)
       return
     }
