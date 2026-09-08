@@ -27,7 +27,10 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user && !request.nextUrl.pathname.startsWith('/login')) {
+  // Cron 任务由 Vercel 服务器调用（无用户 cookie），路由内部用 CRON_SECRET 校验
+  const isCron = request.nextUrl.pathname.startsWith('/api/cron/')
+
+  if (!user && !isCron && !request.nextUrl.pathname.startsWith('/login')) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { buildReminder, todayStr } from '@/lib/reminders/engine'
+import { eventMeta } from '@/lib/events/meta'
 import type { FamilyEvent } from '@/lib/types'
 import LogoutButton from '@/components/LogoutButton'
 
@@ -15,11 +16,6 @@ const modules: { icon: string; name: string; desc: string; ready: boolean; href?
   { icon: '🏮', name: '家风', desc: '家训、家庭会议', ready: false },
   { icon: '🍳', name: '家事', desc: '每周菜单、体质饮食', ready: false },
 ]
-
-const TYPE_ICON: Record<string, string> = {
-  birthday: '🎂', call: '📞', checkup: '🩺', bill: '💳',
-  vaccine: '💉', festival: '🏮', meeting: '🗓️', other: '📌',
-}
 
 export default async function Home() {
   const supabase = await createClient()
@@ -55,7 +51,10 @@ export default async function Home() {
       <section className="bg-white rounded-2xl border border-orange-100 p-5 my-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-medium text-gray-500">⏰ 最近提醒</h2>
-          <Link href="/events" className="text-xs text-orange-500 hover:text-orange-600">管理 →</Link>
+          <div className="flex items-center gap-3">
+            <Link href="/reminders" className="text-xs text-orange-500 hover:text-orange-600">全部 →</Link>
+            <Link href="/events" className="text-xs text-orange-500 hover:text-orange-600">管理 →</Link>
+          </div>
         </div>
         {reminders.length === 0 ? (
           <p className="text-gray-400 text-sm">
@@ -68,7 +67,7 @@ export default async function Home() {
             {reminders.map(({ event, r }) => (
               <li key={event.id} className="flex items-center justify-between text-sm">
                 <span className="text-gray-700">
-                  {TYPE_ICON[event.type] ?? '📌'} {event.title}
+                  {eventMeta(event.type).icon} {event.title}
                 </span>
                 <span className={`text-xs ${r!.daysLeft === 0 ? 'text-red-500 font-semibold' : 'text-orange-500'}`}>
                   {r!.daysLeft === 0 ? '就是今天' : `${r!.daysLeft} 天后`} · {r!.nextDate.slice(5).replace('-', '/')}

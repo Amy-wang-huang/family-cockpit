@@ -4,18 +4,8 @@ import { useState, useTransition } from 'react'
 import EventForm from './EventForm'
 import { deleteEvent, toggleEvent } from './actions'
 import { daysUntil, nextOccurrence, todayStr } from '@/lib/reminders/engine'
+import { eventMeta } from '@/lib/events/meta'
 import type { FamilyEvent } from '@/lib/types'
-
-const TYPE_META: Record<string, { icon: string; label: string }> = {
-  birthday: { icon: '🎂', label: '生日' },
-  call: { icon: '📞', label: '电话' },
-  checkup: { icon: '🩺', label: '体检' },
-  bill: { icon: '💳', label: '缴费' },
-  vaccine: { icon: '💉', label: '疫苗' },
-  festival: { icon: '🏮', label: '节日' },
-  meeting: { icon: '🗓️', label: '会议' },
-  other: { icon: '📌', label: '其他' },
-}
 
 const RECURRENCE_LABEL: Record<string, string> = {
   none: '仅一次',
@@ -36,7 +26,7 @@ export default function EventCard({ event, memberName, members }: Props) {
   const [deleting, setDeleting] = useState(false)
   const [pending, startTransition] = useTransition()
 
-  const meta = TYPE_META[event.type] ?? TYPE_META.other
+  const meta = eventMeta(event.type)
   const today = todayStr()
   const next = nextOccurrence(event.start_date, event.recurrence, today)
   const daysLeft = daysUntil(next, today)
