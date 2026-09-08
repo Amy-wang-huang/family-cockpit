@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { getFamilyId } from '@/lib/supabase/family'
 
 export interface MemberInput {
   memberId?: string
@@ -15,22 +15,6 @@ export interface MemberInput {
   tags: string[]
   taboos: string[]
   note: string
-}
-
-async function getFamilyId() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) throw new Error('未登录')
-
-  const { data } = await supabase
-    .from('members')
-    .select('family_id')
-    .eq('user_id', user.id)
-    .single()
-  if (!data) throw new Error('找不到你的家庭档案，请重新注册或联系管理员')
-  return { supabase, familyId: data.family_id as string }
 }
 
 function parseInput(formData: FormData): MemberInput {

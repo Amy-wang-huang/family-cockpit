@@ -11,3 +11,15 @@ export interface Member {
   taboos: string[] | null
   note: string | null
 }
+
+export interface FamilyEvent {
+  id: string
+  member_id: string | null
+  type: string
+  title: string
+  start_date: string
+  recurrence: string
+  advance_days: number
+  is_active: boolean
+  note: string | null
+}

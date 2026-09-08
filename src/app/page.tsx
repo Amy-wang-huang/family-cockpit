@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { buildReminder, todayStr } from '@/lib/reminders/engine'
+import type { FamilyEvent } from '@/lib/types'
 import LogoutButton from '@/components/LogoutButton'
 
 const modules: { icon: string; name: string; desc: string; ready: boolean; href?: string }[] = [
+  { icon: '🔔', name: '提醒事项', desc: '生日、体检、缴费、电话', ready: true, href: '/events' },
   { icon: '👤', name: '成员档案', desc: '全家人的档案与生日提醒', ready: true, href: '/family' },
   { icon: '❤️', name: '父母健康', desc: '体检、用药、电话提醒', ready: true },
   { icon: '🌱', name: '孩子成长', desc: '学习、记录、教育支出', ready: true },
@@ -13,11 +16,28 @@ const modules: { icon: string; name: string; desc: string; ready: boolean; href?
   { icon: '🍳', name: '家事', desc: '每周菜单、体质饮食', ready: false },
 ]
 
+const TYPE_ICON: Record<string, string> = {
+  birthday: '🎂', call: '📞', checkup: '🩺', bill: '💳',
+  vaccine: '💉', festival: '🏮', meeting: '🗓️', other: '📌',
+}
+
 export default async function Home() {
   const supabase = await createClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  const { data: events } = await supabase
+    .from('events')
+    .select('id, member_id, type, title, start_date, recurrence, advance_days, is_active')
+    .eq('is_active', true)
+
+  const today = todayStr()
+  const reminders = ((events ?? []) as FamilyEvent[])
+    .map((e) => ({ event: e, r: buildReminder(e, today) }))
+    .filter((x) => x.r !== null)
+    .sort((a, b) => a.r!.daysLeft - b.r!.daysLeft)
+    .slice(0, 5)
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-orange-50 to-amber-50 p-6 max-w-3xl mx-auto">
@@ -33,8 +53,30 @@ export default async function Home() {
       </header>
 
       <section className="bg-white rounded-2xl border border-orange-100 p-5 my-4">
-        <h2 className="text-sm font-medium text-gray-500 mb-3">本周提醒</h2>
-        <p className="text-gray-400 text-sm">暂无提醒 —— D4 提醒引擎上线后，这里会显示生日、体检、缴费等提前提醒</p>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-medium text-gray-500">⏰ 最近提醒</h2>
+          <Link href="/events" className="text-xs text-orange-500 hover:text-orange-600">管理 →</Link>
+        </div>
+        {reminders.length === 0 ? (
+          <p className="text-gray-400 text-sm">
+            近期没有需要操心的事。去
+            <Link href="/events" className="text-orange-500 mx-0.5">提醒事项</Link>
+            添加生日、体检、缴费吧
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {reminders.map(({ event, r }) => (
+              <li key={event.id} className="flex items-center justify-between text-sm">
+                <span className="text-gray-700">
+                  {TYPE_ICON[event.type] ?? '📌'} {event.title}
+                </span>
+                <span className={`text-xs ${r!.daysLeft === 0 ? 'text-red-500 font-semibold' : 'text-orange-500'}`}>
+                  {r!.daysLeft === 0 ? '就是今天' : `${r!.daysLeft} 天后`} · {r!.nextDate.slice(5).replace('-', '/')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="grid grid-cols-2 gap-3">
